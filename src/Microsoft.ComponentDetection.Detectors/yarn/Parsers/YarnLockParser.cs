@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Composition;
 using System.Linq;
@@ -20,6 +20,11 @@ namespace Microsoft.ComponentDetection.Detectors.Yarn.Parsers
 
         [Import]
         public ILogger Logger { get; set; }
+
+        public static string NormalizeVersion(string version)
+        {
+            return version.StartsWith("npm:") ? version : $"npm:{version}";
+        }
 
         public bool CanParse(YarnLockVersion yarnLockVersion)
         {
@@ -153,11 +158,6 @@ namespace Microsoft.ComponentDetection.Detectors.Yarn.Parsers
 
             output = new Tuple<string, string>(name, parts[1]);
             return true;
-        }
-
-        public static string NormalizeVersion(string version)
-        {
-            return version.StartsWith("npm:") ? version : $"npm:{version}";
         }
     }
 }

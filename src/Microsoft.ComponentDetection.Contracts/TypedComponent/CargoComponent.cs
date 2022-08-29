@@ -4,15 +4,15 @@ namespace Microsoft.ComponentDetection.Contracts.TypedComponent
 {
     public class CargoComponent : TypedComponent
     {
-        private CargoComponent()
-        {
-            // reserved for deserialization
-        }
-
         public CargoComponent(string name, string version)
         {
             this.Name = this.ValidateRequiredInput(name, nameof(this.Name), nameof(ComponentType.Cargo));
             this.Version = this.ValidateRequiredInput(version, nameof(this.Version), nameof(ComponentType.Cargo));
+        }
+
+        private CargoComponent()
+        {
+            // reserved for deserialization
         }
 
         public string Name { get; set; }

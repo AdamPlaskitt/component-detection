@@ -1,20 +1,20 @@
-﻿using PackageUrl;
+using PackageUrl;
 
 namespace Microsoft.ComponentDetection.Contracts.TypedComponent
 {
     public class LinuxComponent : TypedComponent
     {
-        private LinuxComponent()
-        {
-            /* Reserved for deserialization */
-        }
-
         public LinuxComponent(string distribution, string release, string name, string version)
         {
             this.Distribution = this.ValidateRequiredInput(distribution, nameof(this.Distribution), nameof(ComponentType.Linux));
             this.Release = this.ValidateRequiredInput(release, nameof(this.Release), nameof(ComponentType.Linux));
             this.Name = this.ValidateRequiredInput(name, nameof(this.Name), nameof(ComponentType.Linux));
             this.Version = this.ValidateRequiredInput(version, nameof(this.Version), nameof(ComponentType.Linux));
+        }
+
+        private LinuxComponent()
+        {
+            /* Reserved for deserialization */
         }
 
         public string Distribution { get; set; }

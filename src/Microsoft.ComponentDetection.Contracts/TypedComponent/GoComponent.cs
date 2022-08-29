@@ -1,15 +1,10 @@
-﻿using System;
+using System;
 using PackageUrl;
 
 namespace Microsoft.ComponentDetection.Contracts.TypedComponent
 {
     public class GoComponent : TypedComponent, IEquatable<GoComponent>
     {
-        private GoComponent()
-        {
-            /* Reserved for deserialization */
-        }
-
         public GoComponent(string name, string version)
         {
             this.Name = this.ValidateRequiredInput(name, nameof(this.Name), nameof(ComponentType.Go));
@@ -22,6 +17,11 @@ namespace Microsoft.ComponentDetection.Contracts.TypedComponent
             this.Name = this.ValidateRequiredInput(name, nameof(this.Name), nameof(ComponentType.Go));
             this.Version = this.ValidateRequiredInput(version, nameof(this.Version), nameof(ComponentType.Go));
             this.Hash = this.ValidateRequiredInput(hash, nameof(this.Hash), nameof(ComponentType.Go));
+        }
+
+        private GoComponent()
+        {
+            /* Reserved for deserialization */
         }
 
         public string Name { get; set; }

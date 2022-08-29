@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Composition;
 using System.Runtime.CompilerServices;
 using Microsoft.ComponentDetection.Common.Telemetry.Records;
@@ -68,15 +68,6 @@ namespace Microsoft.ComponentDetection.Common
             this.LogInternal("ERROR", message, VerbosityMode.Quiet);
         }
 
-        private void LogInternal(string prefix, string message, VerbosityMode verbosity = VerbosityMode.Normal)
-        {
-            var formattedPrefix = string.IsNullOrWhiteSpace(prefix) ? string.Empty : $"[{prefix}] ";
-            var text = $"{formattedPrefix}{message} {NewLine}";
-
-            this.PrintToConsole(text, verbosity);
-            this.AppendToFile(text);
-        }
-
         public void LogFailedReadingFile(string filePath, Exception e)
         {
             this.PrintToConsole(NewLine, VerbosityMode.Verbose);
@@ -128,6 +119,15 @@ namespace Microsoft.ComponentDetection.Common
         public void LogBuildError(string message)
         {
             this.PrintToConsole($"##vso[task.LogIssue type=error;]{message}{NewLine}", VerbosityMode.Quiet);
+        }
+
+        private void LogInternal(string prefix, string message, VerbosityMode verbosity = VerbosityMode.Normal)
+        {
+            var formattedPrefix = string.IsNullOrWhiteSpace(prefix) ? string.Empty : $"[{prefix}] ";
+            var text = $"{formattedPrefix}{message} {NewLine}";
+
+            this.PrintToConsole(text, verbosity);
+            this.AppendToFile(text);
         }
 
         private void LogFailedProcessingFile(string filePath)

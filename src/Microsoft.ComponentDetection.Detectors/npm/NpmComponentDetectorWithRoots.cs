@@ -109,95 +109,6 @@ namespace Microsoft.ComponentDetection.Detectors.Npm
             });
         }
 
-        private IObservable<ProcessRequest> RemoveNodeModuleNestedFiles(IObservable<ProcessRequest> componentStreams)
-        {
-            var directoryItemFacades = new List<DirectoryItemFacade>();
-            var directoryItemFacadesByPath = new Dictionary<string, DirectoryItemFacade>();
-
-            return Observable.Create<ProcessRequest>(s =>
-            {
-                return componentStreams.Subscribe(
-                    processRequest =>
-                {
-                    var item = processRequest.ComponentStream;
-                    var currentDir = item.Location;
-                    DirectoryItemFacade last = null;
-                    do
-                    {
-                        currentDir = this.PathUtilityService.GetParentDirectory(currentDir);
-
-                        // We've reached the top / root
-                        if (currentDir == null)
-                        {
-                            // If our last directory isn't in our list of top level nodes, it should be added. This happens for the first processed item and then subsequent times we have a new root (edge cases with multiple hard drives, for example)
-                            if (!directoryItemFacades.Contains(last))
-                            {
-                                directoryItemFacades.Add(last);
-                            }
-
-                            var skippedFolder = this.SkippedFolders.FirstOrDefault(folder => item.Location.Contains(folder));
-
-                            // When node_modules is part of the path down to a given item, we skip the item. Otherwise, we yield the item.
-                            if (string.IsNullOrEmpty(skippedFolder))
-                            {
-                                s.OnNext(processRequest);
-                            }
-                            else
-                            {
-                                this.Logger.LogVerbose($"Ignoring package-lock.json at {item.Location}, as it is inside a {skippedFolder} folder.");
-                            }
-
-                            break;
-                        }
-
-                        var directoryExisted = directoryItemFacadesByPath.TryGetValue(currentDir, out var current);
-                        if (!directoryExisted)
-                        {
-                            directoryItemFacadesByPath[currentDir] = current = new DirectoryItemFacade
-                            {
-                                Name = currentDir,
-                                Files = new List<IComponentStream>(),
-                                Directories = new List<DirectoryItemFacade>(),
-                            };
-                        }
-
-                        // If we came from a directory, we add it to our graph.
-                        if (last != null)
-                        {
-                            current.Directories.Add(last);
-                        }
-
-                        // If we didn't come from a directory, it's because we're just getting started. Our current directory should include the file that led to it showing up in the graph.
-                        else
-                        {
-                            current.Files.Add(item);
-                        }
-
-                        last = current;
-                    }
-
-                    // Go all the way up
-                    while (currentDir != null);
-                },
-                    s.OnCompleted);
-            });
-        }
-
-        private async Task SafeProcessAllPackageJTokens(IComponentStream componentStream, JTokenProcessingDelegate jtokenProcessor)
-        {
-            try
-            {
-                await this.ProcessAllPackageJTokensAsync(componentStream, jtokenProcessor);
-            }
-            catch (Exception e)
-            {
-                // If something went wrong, just ignore the component
-                this.Logger.LogBuildWarning($"Could not parse Jtokens from {componentStream.Location} file.");
-                this.Logger.LogFailedReadingFile(componentStream.Location, e);
-                return;
-            }
-        }
-
         protected Task ProcessAllPackageJTokensAsync(IComponentStream componentStream, JTokenProcessingDelegate jtokenProcessor)
         {
             try
@@ -250,6 +161,95 @@ namespace Microsoft.ComponentDetection.Detectors.Npm
             }
 
             this.TraverseRequirementAndDependencyTree(topLevelDependencies, dependencyLookup, singleFileComponentRecorder);
+        }
+
+        private IObservable<ProcessRequest> RemoveNodeModuleNestedFiles(IObservable<ProcessRequest> componentStreams)
+        {
+            var directoryItemFacades = new List<DirectoryItemFacade>();
+            var directoryItemFacadesByPath = new Dictionary<string, DirectoryItemFacade>();
+
+            return Observable.Create<ProcessRequest>(s =>
+            {
+                return componentStreams.Subscribe(
+                    processRequest =>
+                    {
+                        var item = processRequest.ComponentStream;
+                        var currentDir = item.Location;
+                        DirectoryItemFacade last = null;
+                        do
+                        {
+                            currentDir = this.PathUtilityService.GetParentDirectory(currentDir);
+
+                            // We've reached the top / root
+                            if (currentDir == null)
+                            {
+                                // If our last directory isn't in our list of top level nodes, it should be added. This happens for the first processed item and then subsequent times we have a new root (edge cases with multiple hard drives, for example)
+                                if (!directoryItemFacades.Contains(last))
+                                {
+                                    directoryItemFacades.Add(last);
+                                }
+
+                                var skippedFolder = this.SkippedFolders.FirstOrDefault(folder => item.Location.Contains(folder));
+
+                                // When node_modules is part of the path down to a given item, we skip the item. Otherwise, we yield the item.
+                                if (string.IsNullOrEmpty(skippedFolder))
+                                {
+                                    s.OnNext(processRequest);
+                                }
+                                else
+                                {
+                                    this.Logger.LogVerbose($"Ignoring package-lock.json at {item.Location}, as it is inside a {skippedFolder} folder.");
+                                }
+
+                                break;
+                            }
+
+                            var directoryExisted = directoryItemFacadesByPath.TryGetValue(currentDir, out var current);
+                            if (!directoryExisted)
+                            {
+                                directoryItemFacadesByPath[currentDir] = current = new DirectoryItemFacade
+                                {
+                                    Name = currentDir,
+                                    Files = new List<IComponentStream>(),
+                                    Directories = new List<DirectoryItemFacade>(),
+                                };
+                            }
+
+                            // If we came from a directory, we add it to our graph.
+                            if (last != null)
+                            {
+                                current.Directories.Add(last);
+                            }
+
+                            // If we didn't come from a directory, it's because we're just getting started. Our current directory should include the file that led to it showing up in the graph.
+                            else
+                            {
+                                current.Files.Add(item);
+                            }
+
+                            last = current;
+                        }
+
+                        // Go all the way up
+                        while (currentDir != null);
+                    },
+                    s.OnCompleted);
+            });
+        }
+
+        private async Task SafeProcessAllPackageJTokens(IComponentStream componentStream, JTokenProcessingDelegate jtokenProcessor)
+        {
+            try
+            {
+                await this.ProcessAllPackageJTokensAsync(componentStream, jtokenProcessor);
+            }
+            catch (Exception e)
+            {
+                // If something went wrong, just ignore the component
+                this.Logger.LogBuildWarning($"Could not parse Jtokens from {componentStream.Location} file.");
+                this.Logger.LogFailedReadingFile(componentStream.Location, e);
+                return;
+            }
         }
 
         private void TraverseRequirementAndDependencyTree(IEnumerable<(JProperty, TypedComponent)> topLevelDependencies, IDictionary<string, JProperty> dependencyLookup, ISingleFileComponentRecorder singleFileComponentRecorder)

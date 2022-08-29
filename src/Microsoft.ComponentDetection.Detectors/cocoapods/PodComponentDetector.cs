@@ -27,6 +27,25 @@ namespace Microsoft.ComponentDetection.Detectors.CocoaPods
 
         public override int Version { get; } = 2;
 
+        protected override async Task OnFileFound(ProcessRequest processRequest, IDictionary<string, string> detectorArgs)
+        {
+            var singleFileComponentRecorder = processRequest.SingleFileComponentRecorder;
+            var file = processRequest.ComponentStream;
+
+            this.Logger.LogVerbose($"Found {file.Pattern}: {file.Location}");
+
+            try
+            {
+                var podfileLock = await ParsePodfileLock(file);
+
+                this.ProcessPodfileLock(singleFileComponentRecorder, podfileLock);
+            }
+            catch (Exception e)
+            {
+                this.Logger.LogFailedReadingFile(file.Location, e);
+            }
+        }
+
         private class Pod : IYamlConvertible
         {
             public string Name { get; set; }
@@ -208,25 +227,6 @@ namespace Microsoft.ComponentDetection.Detectors.CocoaPods
             }
 
             return gitOption;
-        }
-
-        protected override async Task OnFileFound(ProcessRequest processRequest, IDictionary<string, string> detectorArgs)
-        {
-            var singleFileComponentRecorder = processRequest.SingleFileComponentRecorder;
-            var file = processRequest.ComponentStream;
-
-            this.Logger.LogVerbose($"Found {file.Pattern}: {file.Location}");
-
-            try
-            {
-                var podfileLock = await ParsePodfileLock(file);
-
-                this.ProcessPodfileLock(singleFileComponentRecorder, podfileLock);
-            }
-            catch (Exception e)
-            {
-                this.Logger.LogFailedReadingFile(file.Location, e);
-            }
         }
 
         private void ProcessPodfileLock(

@@ -179,11 +179,5 @@ namespace Microsoft.ComponentDetection.Detectors.Tests
                     ExitCode = 0,
                 });
         }
-
-        protected bool ShouldBeEquivalentTo<T>(IEnumerable<T> result, IEnumerable<T> expected)
-        {
-            result.Should<T>().BeEquivalentTo(expected);
-            return true;
-        }
     }
 }

@@ -17,19 +17,6 @@ namespace Microsoft.ComponentDetection.Common
     [Shared]
     public class PathUtilityService : IPathUtilityService
     {
-        [DllImport("kernel32.dll", EntryPoint = "CreateFileW", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern SafeFileHandle CreateFile(
-            [In] string lpFileName,
-            [In] uint dwDesiredAccess,
-            [In] uint dwShareMode,
-            [In] IntPtr lpSecurityAttributes,
-            [In] uint dwCreationDisposition,
-            [In] uint dwFlagsAndAttributes,
-            [In] IntPtr hTemplateFile);
-
-        [DllImport("kernel32.dll", EntryPoint = "GetFinalPathNameByHandleW", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern int GetFinalPathNameByHandle([In] IntPtr hFile, [Out] StringBuilder lpszFilePath, [In] int cchFilePath, [In] int dwFlags);
-
         /// <summary>
         /// This call can be made on a linux system to get the absolute path of a file. It will resolve nested layers.
         /// Note: You may pass IntPtr.Zero to the output parameter. You MUST then free the IntPtr that RealPathLinux returns
@@ -60,6 +47,19 @@ namespace Microsoft.ComponentDetection.Common
         public const int InitalPathBufferSize = 512;
 
         public const string LongPathPrefix = "\\\\?\\";
+
+        [DllImport("kernel32.dll", EntryPoint = "CreateFileW", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern SafeFileHandle CreateFile(
+            [In] string lpFileName,
+            [In] uint dwDesiredAccess,
+            [In] uint dwShareMode,
+            [In] IntPtr lpSecurityAttributes,
+            [In] uint dwCreationDisposition,
+            [In] uint dwFlagsAndAttributes,
+            [In] IntPtr hTemplateFile);
+
+        [DllImport("kernel32.dll", EntryPoint = "GetFinalPathNameByHandleW", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern int GetFinalPathNameByHandle([In] IntPtr hFile, [Out] StringBuilder lpszFilePath, [In] int cchFilePath, [In] int dwFlags);
 
         private readonly ConcurrentDictionary<string, string> resolvedPaths = new ConcurrentDictionary<string, string>();
 

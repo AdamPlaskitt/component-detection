@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Composition;
 using System.IO;
@@ -34,6 +34,21 @@ namespace Microsoft.ComponentDetection.Contracts
         /// <summary>Gets the categories this detector is considered a member of. Used by the DetectorCategories arg to include detectors.</summary>
         public abstract IEnumerable<string> Categories { get; }
 
+        /// <summary>Gets the supported component types. </summary>
+        public abstract IEnumerable<ComponentType> SupportedComponentTypes { get; }
+
+        /// <summary>Gets the version of this component detector. </summary>
+        public abstract int Version { get; }
+
+        [Import]
+        public IObservableDirectoryWalkerFactory Scanner { get; set; }
+
+        public bool NeedsAutomaticRootDependencyCalculation { get; protected set; }
+
+        protected Dictionary<string, string> Telemetry { get; set; } = new Dictionary<string, string>();
+
+        protected IObservable<IComponentStream> ComponentStreams { get; private set; }
+
         /// <summary>
         /// Gets the folder names that will be skipped by the Component Detector.
         /// </summary>
@@ -45,37 +60,12 @@ namespace Microsoft.ComponentDetection.Contracts
         /// </summary>
         protected ScanRequest CurrentScanRequest { get; set; }
 
-        /// <summary>Gets the supported component types. </summary>
-        public abstract IEnumerable<ComponentType> SupportedComponentTypes { get; }
-
-        /// <summary>Gets the version of this component detector. </summary>
-        public abstract int Version { get; }
-
-        [Import]
-        public IObservableDirectoryWalkerFactory Scanner { get; set; }
-
-        protected IObservable<IComponentStream> ComponentStreams { get; private set; }
-
-        public bool NeedsAutomaticRootDependencyCalculation { get; protected set; }
-
-        protected Dictionary<string, string> Telemetry { get; set; } = new Dictionary<string, string>();
-
         /// <inheritdoc />
         public async virtual Task<IndividualDetectorScanResult> ExecuteDetectorAsync(ScanRequest request)
         {
             this.ComponentRecorder = request.ComponentRecorder;
             this.Scanner.Initialize(request.SourceDirectory, request.DirectoryExclusionPredicate, 1);
             return await this.ScanDirectoryAsync(request);
-        }
-
-        private Task<IndividualDetectorScanResult> ScanDirectoryAsync(ScanRequest request)
-        {
-            this.CurrentScanRequest = request;
-
-            var filteredObservable = this.Scanner.GetFilteredComponentStreamObservable(request.SourceDirectory, this.SearchPatterns, request.ComponentRecorder);
-
-            this.Logger?.LogVerbose($"Registered {this.GetType().FullName}");
-            return this.ProcessAsync(filteredObservable, request.DetectorArgs);
         }
 
         /// <summary>
@@ -87,6 +77,28 @@ namespace Microsoft.ComponentDetection.Contracts
         protected Task<IEnumerable<IComponentStream>> GetFileStreamsAsync(DirectoryInfo sourceDirectory, ExcludeDirectoryPredicate exclusionPredicate)
         {
             return Task.FromResult(this.ComponentStreamEnumerableFactory.GetComponentStreams(sourceDirectory, this.SearchPatterns, exclusionPredicate));
+        }
+
+        protected virtual Task<IObservable<ProcessRequest>> OnPrepareDetection(IObservable<ProcessRequest> processRequests, IDictionary<string, string> detectorArgs)
+        {
+            return Task.FromResult(processRequests);
+        }
+
+        protected abstract Task OnFileFound(ProcessRequest processRequest, IDictionary<string, string> detectorArgs);
+
+        protected virtual Task OnDetectionFinished()
+        {
+            return Task.CompletedTask;
+        }
+
+        private Task<IndividualDetectorScanResult> ScanDirectoryAsync(ScanRequest request)
+        {
+            this.CurrentScanRequest = request;
+
+            var filteredObservable = this.Scanner.GetFilteredComponentStreamObservable(request.SourceDirectory, this.SearchPatterns, request.ComponentRecorder);
+
+            this.Logger?.LogVerbose($"Registered {this.GetType().FullName}");
+            return this.ProcessAsync(filteredObservable, request.DetectorArgs);
         }
 
         private async Task<IndividualDetectorScanResult> ProcessAsync(IObservable<ProcessRequest> processRequests, IDictionary<string, string> detectorArgs)
@@ -108,18 +120,6 @@ namespace Microsoft.ComponentDetection.Contracts
                 ResultCode = ProcessingResultCode.Success,
                 AdditionalTelemetryDetails = this.Telemetry,
             };
-        }
-
-        protected virtual Task<IObservable<ProcessRequest>> OnPrepareDetection(IObservable<ProcessRequest> processRequests, IDictionary<string, string> detectorArgs)
-        {
-            return Task.FromResult(processRequests);
-        }
-
-        protected abstract Task OnFileFound(ProcessRequest processRequest, IDictionary<string, string> detectorArgs);
-
-        protected virtual Task OnDetectionFinished()
-        {
-            return Task.CompletedTask;
         }
     }
 }

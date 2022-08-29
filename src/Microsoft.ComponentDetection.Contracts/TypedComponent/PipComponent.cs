@@ -4,15 +4,15 @@ namespace Microsoft.ComponentDetection.Contracts.TypedComponent
 {
     public class PipComponent : TypedComponent
     {
-        private PipComponent()
-        {
-            /* Reserved for deserialization */
-        }
-
         public PipComponent(string name, string version)
         {
             this.Name = this.ValidateRequiredInput(name, nameof(this.Name), nameof(ComponentType.Pip));
             this.Version = this.ValidateRequiredInput(version, nameof(this.Version), nameof(ComponentType.Pip));
+        }
+
+        private PipComponent()
+        {
+            /* Reserved for deserialization */
         }
 
         public string Name { get; set; }
