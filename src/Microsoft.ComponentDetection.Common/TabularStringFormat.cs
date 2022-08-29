@@ -11,7 +11,6 @@ namespace Microsoft.ComponentDetection.Common
         public const char DefaultHorizontalLineChar = '_';
 
         private IList<Column> columns;
-        private int totalWidth;
         private char horizontalLineChar;
         private char verticalLineChar;
         private string tableTitle;
@@ -19,7 +18,6 @@ namespace Microsoft.ComponentDetection.Common
         public TabularStringFormat(IList<Column> columns, char horizontalLineChar = DefaultHorizontalLineChar, char verticalLineChar = DefaultVerticalLineChar, string tableTitle = null)
         {
             this.columns = columns;
-            this.totalWidth = columns.Count + 1 + columns.Sum(x => x.Width);
             this.horizontalLineChar = horizontalLineChar;
             this.verticalLineChar = verticalLineChar;
             this.tableTitle = tableTitle;
